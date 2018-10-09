@@ -1,0 +1,69 @@
+"""
+Please note, this code is only for python 3+. If you are using python 2+, please modify the code accordingly.
+
+predict linear line y=0.1x[weights]+0.3[bias]
+
+"""
+from __future__ import print_function
+import tensorflow as tf
+import numpy as np # numerical module
+
+
+# 一 create data
+x_data = np.random.rand(100).astype(np.float32)
+  # 自己创造的，编辑的data.生成100个随机数列，用它的type是np.float32,
+  #因为在tf里面，大部分数据的type是float32的形式。所以我们定制的时候也定制成这样
+y_data = x_data*0.1 + 0.3
+# weight很接近于0.1， bias很接近于0.3. 说明tf真正学到东西了
+
+#二## create tensorflow structure start ###
+Weights = tf.Variable(tf.random_uniform([1], -1.0, 1.0))
+ # 大写是因为 weights有可能是矩阵的形式，大写比较方便辨别
+ # 定义变量的参数要用到variable，（）里是weights的参数变量，
+ # tf.random_uniform用的是随机数列生成的方式生成了我的这些参数
+ # ([1], -1.0, 1.0)结构是一个一维的结构，随机数列生成的范围是【-1,1】
+biases = tf.Variable(tf.zeros([1]))
+ # 初始值定义成0
+# w 生成了【-1,1】之间的一个数，b初始值是0，它会一步一步的学习，最后接近于0.1或0.3
+y = Weights*x_data + biases
+ #预测的y, 形式是这样的。Biases提升y的准确度
+
+loss = tf.reduce_mean(tf.square(y-y_data))
+ #计算我预测的y与实际的y:y_data,它的一个差别
+ #最初的时候差别会很大，也就是loss会很大
+
+ # 反向传递误差的工作就教给optimizer了, 我们使用的误差传递方法是梯度下降法: Gradient Descent 让后我们使用 optimizer 来进行参数的更新.
+optimizer = tf.train.GradientDescentOptimizer(0.5)
+ #神经网络要做的事情呢是我已经知道它有这个误差，
+ #要建立一个优化器，然后用这个优化器呢，减少这个误差
+ #每一步训练都要做的这个事情，神经网络要减少误差，提升参数的准确度
+ #到下一次的时候误差会更小，this is the neural network key idea
+ #这里我们选择最基础最原始的optimizer: GradientDescentOptimizer
+ # learning rate: 0.5
+train = optimizer.minimize(loss)
+
+#！！！#init = tf.initialize_all_variables()   tf 马上就要废弃这种写法
+# init = tf.global_variables_initializer()  # 替换成这样就好
+# 虽然我们建立了很多变量，我们还没有初始化我们的变量。
+# nn就是一个图，你可以先把它做好搭建好结构，然后再初始化这个结构
+### create tensorflow structure end ###
+
+#下面把这个结构激活，初始化
+# 我们再创建会话 Session. 我们会在下一节中详细讲解 Session. 我们用 Session 来执行 init 初始化步骤. 并且, 用 Session 来 run 每一次 training 的数据. 逐步提升神经网络的预测准确性.
+sess = tf.Session()
+# tf.initialize_all_variables() no long valid from
+# 2017-03-02 if using tensorflow >= 0.12
+if int((tf.__version__).split('.')[1]) < 12 and int((tf.__version__).split('.')[0]) < 1:
+    init = tf.initialize_all_variables()
+else:
+    init = tf.global_variables_initializer()
+sess.run(init)     # very important
+ # session.run的时候呢，session就像一个指针，指向了我要处理的地方，就被激活起来啦
+ # 整个系统，整个这个nn图被激活了
+
+###下面开始训练了
+for step in range(201):
+    sess.run(train)   # 真正训练，指针指向train
+    if step % 20 == 0:    # 每隔上20步呢，我就打印一下训练的这个结果
+        print(step, sess.run(Weights), sess.run(biases))
+        # 指向weights,告诉我现在的值是多少。bias这个参数是多少

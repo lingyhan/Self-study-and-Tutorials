@@ -1,0 +1,130 @@
+"""
+Please note, this code is only for python 3+. If you are using python 2+, please modify the code accordingly.
+
+"""
+
+""
+# method which strongly recommend
+import tensorflow as tf
+
+""""
+normaly, 
+""""
+var = tf.Variable(0)    # our first variable in the "global_variable" set
+# go to tensorflow library and find the piece of code which called Variable
+add_operation = tf.add(var, 1) # add_operation in tf (they called nodes--maybe wrong) on the tf graph,they call in tf operation
+update_operation = tf.assign(var, add_operation)
+# tf.assign means update the new value to the variable
+
+with tf.Session() as sess:
+    # once define variables, you have to initialize them by doing this
+    sess.run(tf.global_variables_initializer())
+    for _ in range(3):
+        sess.run(update_operation) # put a pointer here
+        print(sess.run(var))
+        # TRY print(sess.run(update_operation)) it depends it's a variable or operation
+#cos var is a defined variable, update_operation is updating a variable, it's like an operation.
+# print some values, but the values are of variables. first you build up some operations
+# (in tf, you build a graph: feed? in some variable,create it an operation, and you assign that
+# operation, output into var)
+"""""
+you define sth in python, and tf will take this graph and execute in C, cos C is fast. I think
+that what is the session.run does 
+build a session to say I am gonna create sth and send it to C,and then they'll go through a loop
+first (initialize your variable,set them to 0)to go up to operation, they keep running this, gonna run 3 times,
+your variable changed,we want to print out our variable. Basically, ask C to return that output.so you have 
+the session to run var,to return what the value in var is. if you just go here to print var, it's not gonna to 
+print the value of var, it'll say it have the tf var. but if you go to session.run, they'll take that variable
+and will find that value and return it and then print that out. run it in C and tell me the answer.
+""""
+
+# another method
+from __future__ import print_function
+import tensorflow as tf
+
+state = tf.Variable(0, name='counter')   #与pthon中定义变量有所不一样，一定定义成它是个变量它才是个变量
+#在 Tensorflow 中，定义了某字符串是变量，它才是变量，这一点是与 Python 所不同的。
+# 定义语法： state = tf.Variable()
+                             #它可以给这个变量一个初始的值比如说是0，也可以给它一个名字
+                             #是个计数的变量，每次加一
+#print(state.name)   THE RESULT  counter:0
+one = tf.constant(1)   # 往上面加的是个常量1，变量加上常量还是那个变量
+                       # 定义常量 one
+new_value = tf.add(state, one)   #定义加法步骤 (注: 此步并没有直接计算)新的变量值是 state 加上常量1
+update = tf.assign(state, new_value)  #更新，把new_value这个变量呢，加载到了这个state上面
+                        # 所以现在这个state当前的状态就是等于new_value,下一次又加上一遍new_value
+                        # 将 State 更新成 new_value
+
+# tf中你设计了一些变量的话，记住一定要初始化哦
+''''
+如果定义 Variable, 就一定要 initialize
+# init = tf.initialize_all_variables() # tf 马上就要废弃这种写法
+init = tf.global_variables_initializer()  # 替换成这样就好
+'''
+# tf.initialize_all_variables()   no long valid from
+# 2017-03-02 if using tensorflow >= 0.12
+if int((tf.__version__).split('.')[1]) < 12 and int((tf.__version__).split('.')[0]) < 1:
+    init = tf.initialize_all_variables()
+else:
+    init = tf.global_variables_initializer()
+
+# 到这里变量还是没有被激活，需要再在 sess 里, sess.run(init) , 激活 init 这一步.
+with tf.Session() as sess:
+    sess.run(init)  # 一定要run一下init, 这样变量才会被初始化
+    for _ in range(3):  # 下划线表示 临时变量， 仅用一次，后面无需再用到
+                      # it's just a variable like any other, but by convention it means
+                   #that you don't intend to use that value
+                   # 与for i in range() 一样，这两个其实是一样的，只是变量名字不一样，
+                      # 要是到变量名是要求用字母或者下划线开头的，这个正好只用了一个下划线而已
+        sess.run(update)  # 把state, update 生成new value
+        print(sess.run(state)) # 注意直接print state 是没有用的。
+                   #一定要把session的指针放到state上面去run一下，才会出现state的结果
+'''
+注意：直接 print(state) 不起作用！！
+一定要把 sess 的指针指向 state 再进行 print 才能得到想要的结果！
+1
+2
+3
+'''
+# Extremely basic knowledge about variables, in Python!
+'''
+a=1
+assign this value 1,this number to the variable named a, you can think of it is
+sort of like the variable a containing the value 1 (not very accurate but just think about it)
+the variable a contains the value 1,or the variable a refers to the value 1
+you can check what's inside the variable a by printing with print
+print(a)
+a variable doesn't necessarily refer to a number, it could refer to a string
+c = "hello there"
+
+In C or C++, you have a box a(variable name) containing the value 1,
+in python this is not the accurate way to think about it.
+a is more like "a name tag" and this can refer to any value you want 
+When you say a equals one. you are saying a refers to the value one now.
+
+b = 2
+d = 2
+it's totally possible for two or more variables in Python to point to 
+the same value--in this case 2 and then it's also possible for you to 
+reassign an existing variable to another value so if you writ b = 1
+after executing this line of code b = 2. After this line b refers to two
+of course.but after writing b = 1. B refers to 1 which a also refers to 
+
+And you even reassign an existing variable for example b which once
+referred to a number to sth else. eg, a string. 
+
+Is it possible to assign a variable to another one. the answer is yes
+so here if you write a = 1
+c = "hello world"
+what happens if you write f = a?
+this means the variable f, the name f refers to the value a is referring to
+so f refers to 1 now.
+So f doesn't refer to the variable a, instead it refers to the value a
+is referring to. This is important!
+Because if I write a = 2
+a refers to the value 2 instead of 1 but f stays at the value 1
+and this might not be the case if f was referring to the variable a
+
+
+
+'''

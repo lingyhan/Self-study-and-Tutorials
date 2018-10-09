@@ -1,0 +1,38 @@
+"""
+Come on! You can achieve whatever your want
+"""
+### session 是一个执行命令的东西，也就是一个对话的控制is a pointer指针 to the whole network picture
+# 也就是对话的控制
+# we can use sess.run() to 执行图片上面我们已经建立好的结构上面，某一个点的某一个小图片的功能
+# point to a part in this picture and only run that part
+# eg, if use sess.run(prediction), it will return the prediction to you
+# if use sess.run(parameter, coefficient), it will return this,,, to you
+
+import tensorflow as tf
+m1 = tf.constant([[2, 2]])  # 它是一个恒量，一行两列
+m2 = tf.constant([[3],
+                  [3]])     # 两行一列
+dot_operation = tf.matmul(m1, m2) # Matrix multiplication
+# tf.multiply（）两个矩阵中对应元素各自相乘 tf.matmul（）将矩阵a乘以矩阵b，生成a * b
+# 在numpy中，用矩阵的乘法就是 np.dot(m1,m2)
+
+print(dot_operation)  # wrong! no result
+
+# method1 use session
+sess = tf.Session()    # 注意这里的Session首字母必须大写，是Object
+result = sess.run(dot_operation)   # result要从session里面的run中取得出来，返回dot_operation的结果
+  #  每run一次呢，TensorFlow才会执行你这个结构，这是tf的思考模式
+print(result)
+sess.close()  # 更整洁系统一些，有没有差不多
+## then we close the sess.I think it's OK when not close, but it will be more formal when you type this
+
+# method2 use session
+
+# we can use with in python to open sth, same with pickle
+with tf.Session() as sess:  # open a session and keep it in sess
+        # with tf.Session() as sess:  EQUALS  sess = tf.Session()
+        # once finish coding the inside with, it'll automatically close this session
+        # type whatever you want inside the with就像for循环一样
+    result_ = sess.run(dot_operation) # print(sess.run(dot_operation))
+    print(result_)
+# 到此这个session 被自动close, Session will be closed after run

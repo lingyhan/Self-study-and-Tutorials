@@ -1,0 +1,77 @@
+#import所需的模块, 然后建立神经网络当中的 W 和 b, 并初始化变量.
+import tensorflow as tf
+import numpy as np
+
+# Save to file 保存
+# remember to define the same dtype and shape when restore
+# 我们在restore的时候呢[[1,2,3],[3,4,5]]这个形状（不一定数字是一样，
+# 但他的shape一定是一样的）detype也一定是一样的，才能把它导入到我的
+#空的框架之中
+
+# W是一个两行三列的weights,注意weights最好定义一下dtype.
+# 因为123是整数型，restore的时候呢，重新载入W和b的时候会报错
+# 所以一定要先定义一下dtype
+# W = tf.Variable([[1,2,3],[3,4,5]], dtype=tf.float32, name='weights')
+# b = tf.Variable([[1,2,3]], dtype=tf.float32, name='biases')
+
+# 与重建神经网络一样，需要先initialize 一下
+# tf.initialize_all_variables() no long valid from
+# 2017-03-02 if using tensorflow >= 0.12
+# if int((tf.__version__).split('.')[1]) < 12 and int((tf.__version__).split('.')[0]) < 1:
+#     init = tf.initialize_all_variables()
+# else:
+#     init = tf.global_variables_initializer()
+
+# 保存时, 首先要建立一个 tf.train.Saver() 用来保存存储各种变量, 提取变量.
+# 再创建一个名为my_net的文件夹, 用这个 saver 来保存变量到这个目录 "my_net/save_net.ckpt".
+# saver = tf.train.Saver()
+# 之后用session,来run一下init
+# with tf.Session() as sess:
+#    sess.run(init)
+# 一定要事先定义一个文件夹my_net，才能保存到这个目录中
+# 最后进行保存的这一步，它保存之后会返回你一个值，我们将其存在save_path中
+#    save_path = saver.save(sess, "my_net/save_net.ckpt")
+# 括号里面是保存到的session里面的东西：我创建了一个文件夹叫my_net,
+#  在其下面的 save_net它保存的格式，自己可以定义ckpt后缀，官网介绍
+#    print("Save to path: ", save_path)
+# 保存到哪去呢？我们可以把path 打印出来
+
+"""    
+Save to path:  my_net/save_net.ckpt
+"""
+
+################################################
+# 提取
+#提取时, 先建立零时的W 和 b容器. 找到文件目录,
+# 并用saver.restore()我们放在这个目录的变量.
+
+# restore variables（注意并没有完全restore network，只是保存到了变量，
+# 提取出来的时候呢，就存到了我的variable当中，我整个神经网络的框架
+# 需要重新定义）
+# ？ 这里restore network可以吗？
+# redefine the same shape and same type for your variables
+# 只有shape 和 type 一样才能导入
+# 定义一个空的框架，只是把我们reload过来的变量呢放到这个框架当中去
+# 这里其实用numpy中的语句会容易一些（其实用TensorFlow里面
+# tf.Variable(tf.zeros([])?或许也可哦）。因为它有6个数字（两行三列）
+# 然后再reshape一下就OK，2 rows and 3 columns
+W = tf.Variable(np.arange(6).reshape((2, 3)), dtype=tf.float32, name="weights")
+b = tf.Variable(np.arange(3).reshape((1, 3)), dtype=tf.float32, name="biases")
+
+# not need init step 因为restore的时候好像就自动帮initial掉了
+# 这里不需要初始化步骤 init= tf.initialize_all_variables()
+
+saver = tf.train.Saver()
+with tf.Session() as sess:
+    # 不用initial，直接提取变量
+    saver.restore(sess, "my_net/save_net.ckpt") #保存地址是一样的
+    print("weights:", sess.run(W))
+    print("biases:", sess.run(b))
+
+# 再次强调： Tensorflow现在只能保存我们的variable,不能保存整个神经网络框架
+# 你需要重新定义一遍框架，然后再把变量从新放进来继续学习
+"""
+weights: [[ 1.  2.  3.]
+          [ 3.  4.  5.]]
+biases: [[ 1.  2.  3.]]
+"""

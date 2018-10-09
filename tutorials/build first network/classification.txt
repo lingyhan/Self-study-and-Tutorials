@@ -1,0 +1,101 @@
+import tensorflow as tf
+
+### 首先准备数据（MNIST库）
+from tensorflow.examples.tutorials.mnist import input_data
+# number 1 to 10 data
+mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
+# MNIST库是手写体数字库，数据中包含55000张训练图片，每张图片的分辨率是28×28，
+# 所以我们的训练网络输入应该是28×28=784个像素数据。
+
+###### 对于下面这一段话,这个框架，可以用TensorFlow新版本的这一句话
+###### l1 = tf.layers.dense(tf_x, 10, tf.nn.relu) 代替add_layer这个功能
+###### 我在TensorFlow layer 下面呢创建了一个dense layer,就是最普通的隐藏层的结构
+###### 输入端就是tf_x tf_x = tf.placeholder(tf.float32, x.shape) # input x
+
+def add_layer(inputs, in_size, out_size, activation_function=None,):
+    # add one more layer and return the output of this layer
+    Weights = tf.Variable(tf.random_normal([in_size, out_size]))
+    biases = tf.Variable(tf.zeros([1, out_size]) + 0.1,)
+    Wx_plus_b = tf.matmul(inputs, Weights) + biases
+    if activation_function is None:
+        outputs = Wx_plus_b
+    else:
+        outputs = activation_function(Wx_plus_b,)
+    return outputs
+######
+
+def compute_accuracy(v_xs, v_ys): # validation
+    global prediction  #定义全局变量
+    y_pre = sess.run(prediction, feed_dict={xs: v_xs}) #用xs这个data放到feed_dict里面生成预测值
+                                # 预测值是1行10列的这种预测值，但它是从0到1之间的一个数，是一个probability
+                        #比如说我在第三个位置它的概率最高，那我预测的值可能就是3.此图片代表的就是3
+    correct_prediction = tf.equal(tf.argmax(y_pre,1), tf.argmax(v_ys,1))
+                        # 对比3：tf.argmax(y_pre,1)与真实数据tf.argmax(v_ys,1)的差别，
+## argmax返回的是索引值，返回每一行或者每一列的最大值的索引，当选择axis=1时。表示每一行的最大值，0表示每列的最大值索引，
+                        # 对比它们的位置,等于就对了么。不等于就预测错了么
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    #计算这一组dataset（database）中有多少个对的，多少个错的。tf.cast，Casts a tensor to a new type.
+    # x = tf.constant([1.8, 2.2], dtype=tf.float32)
+    # tf.cast(x, tf.int32)  # [1, 2], dtype=tf.int32
+    result = sess.run(accuracy, feed_dict={xs: v_xs, ys: v_ys})
+    # run 一下accuracy，我就可以得到我的result
+    return result
+    # 所输出的result就是一个百分比，越高说明预测的就越准确
+
+### 搭建网络
+# define placeholder for inputs to network
+??? xs = tf.placeholder(tf.float32, [None, 784]) # 28x28=784
+# 不规定它有多少个sample，所以是None,但每一个sample的大小是784（每张照片都有784个像素点）
+#每张图片都表示一个数字，所以我们的输出是数字0到9，共10类。
+#了解到MNIST数据格式如何被辨认出的（自己加的不一定对）
+ys = tf.placeholder(tf.float32, [None, 10])
+#调用add_layer函数搭建一个最简单的训练网络结构，只有输入层和输出层。
+# add output layer
+# 其中输入数据是784个特征，输出数据是10个特征，
+# classification激励函数一般采用softmax函数，
+prediction = add_layer(xs, 784, 10,  activation_function=tf.nn.softmax)
+# regression问题有时候不用activation function或者用其它的
+
+### Cross entropy---loss
+# 在softmax这个功能来说或者是classification这个方面的神经网络
+# 我们可以用到 crossenropy 这个算法。做分类问题，用softmax配上crossentropy
+# loss函数（即最优化目标函数）选用交叉熵函数。
+# 交叉熵用来衡量预测值和真实值的相似程度，如果完全相同，它们的交叉熵等于零。
+# the error between prediction and real data
+???-?tf.reduce_sum(input_tensor, reduction_indices=[1]the 2nd element )? what's none mean in defination'?
+cross_entropy = tf.reduce_mean(-tf.reduce_sum(ys * tf.log(prediction),
+                                              reduction_indices=[1]))  # loss
+# train方法（最优化算法）采用梯度下降法。
+# cross_entropy其实在这里就是loss
+train_step = tf.train.GradientDescentOptimizer(0.5).minimize(cross_entropy)
+
+sess = tf.Session()
+# important step
+# tf.initialize_all_variables() no long valid from
+# 2017-03-02 if using tensorflow >= 0.12
+if int((tf.__version__).split('.')[1]) < 12 and int((tf.__version__).split('.')[0]) < 1:
+    init = tf.initialize_all_variables()
+else:
+    init = tf.global_variables_initializer()
+sess.run(init)
+
+####训练
+for i in range(1000):
+    # 现在开始train，每次只取100张图片，免得数据太多训练太慢。
+    # 并不是每次都学习整套的data,会非常的耗时间，会很慢。每次100个的学
+    # 并且这样学习并不一定比整套的要差
+    # 这里要提取出来一部分的x和y的sample
+    batch_xs, batch_ys = mnist.train.next_batch(100) # Stochastic Gradient Descent
+            # 不是学习整套的data,只是每一百个一百个来学习的话会很快
+    sess.run(train_step, feed_dict={xs: batch_xs, ys: batch_ys})
+    # 每训练50次输出一下预测精度
+    if i % 50 == 0:
+        print(compute_accuracy(
+            mnist.test.images, mnist.test.labels))
+# Classification 与 Regression的区别是：后者可能输出的值只是一个值，
+# 可能只是一个房价或者什么。Classification它输出的值是（看）你有几个分类
+# 它有几个分类就有可能有几个值，比如说我有猫和狗两个分类，那我们可能就有两个值
+# 若（1,0）表示猫，（0,1）表示狗，那预测出来的值是一个概率的值
+# 第一个位置会说它只有0.21的概率它是猫，第二个概率呢0.79是狗
+# 那结果就是预测这是狗
+

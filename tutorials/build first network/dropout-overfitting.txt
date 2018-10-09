@@ -1,0 +1,114 @@
+import tensorflow as tf
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelBinarizer
+
+# 这里的keep_prob是保留概率，即我们要保留的结果所占比例，它作为一个placeholder，
+# 在run时传入， 当keep_prob=1的时候，相当于100%保留，也就是dropout没有起作用。
+# 下面我们分析一下程序结构，首先准备数据，
+
+# load data
+# import 'load_digits' data 是 sklearn 中的一个dataset
+digits = load_digits()
+X = digits.data  # 加载digital data, 一个数字图片data, 0--9
+y = digits.target
+y = LabelBinarizer().fit_transform(y)  # 把y变成binary, 若y表示数字1，
+                                       # 则在第二个位置上放1，类似于MNIST
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.3)
+# 将data 分成 train和test data.
+#其中X_train是训练数据, X_test是测试数据。 然后添加隐含层和输出层
+
+def add_layer(inputs, in_size, out_size, layer_name, activation_function=None, ):
+    # add one more layer and return the output of this layer
+    Weights = tf.Variable(tf.random_normal([in_size, out_size]))
+    biases = tf.Variable(tf.zeros([1, out_size]) + 0.1, )
+    Wx_plus_b = tf.matmul(inputs, Weights) + biases #需要把dropout加载到此
+    # here to dropout
+    # 把结果的（例如）百分之五十舍弃或丢弃掉，每次都是任意的百分之50，
+    # 这样会非常有效
+    # dropout的功能主要是加载到这个地方.含义是dropout掉Wx_plus_b中的多少
+    # 输出的是更新过后的结果Wx_plus_b
+    Wx_plus_b = tf.nn.dropout(Wx_plus_b, keep_prob)
+    if activation_function is None:
+        outputs = Wx_plus_b
+    else:
+        outputs = activation_function(Wx_plus_b, )
+    tf.summary.histogram(layer_name + '/outputs', outputs) # 记录下outputs这个值
+    # 需要强调的是在tensorboard中，它貌似一定要有一个histogram_summary
+    # 因为这节课我只想输出loss,crossentropy 之前没写上句话，会一直报错
+    # 可能一定要有 summary.histogram和 summary.scalar 才能正常输出到tensorboardz中
+     return outputs
+
+
+# define placeholder for inputs to network
+
+keep_prob = tf.placeholder(tf.float32) # 保持多少的结果不被drop掉呢？
+xs = tf.placeholder(tf.float32, [None, 64]) #sklearn中digital data中x是8x8=64个单位
+ys = tf.placeholder(tf.float32, [None, 10]) #输出是10个单位，分别描述0--9
+
+# add output layer 共两层，一层是隐藏层，一层是输出层
+l1 = add_layer(xs, 64, 50, 'l1', activation_function=tf.nn.tanh)
+#input有64个，为了更能看出overfitting问题，我们输出100个，名字为l(ayer)one
+#用其他active function或不用，都会报错，因为在处理信息当中把信息当成none
+#用tf.nn.tanh会避免这个问题
+prediction = add_layer(l1, 50, 10, 'l2', activation_function=tf.nn.softmax)
+# 输如l1当中输出的data，然后它有100个输入值，我要输出10个，命名为l2
+
+# the loss between prediction and real data
+#loss函数（即最优化目标函数）选用交叉熵函数。
+# 交叉熵用来衡量预测值和真实值的相似程度，如果完全相同，交叉熵就等于零。
+cross_entropy = tf.reduce_mean(-tf.reduce_sum(ys * tf.log(prediction),
+                                              reduction_indices=[1]))  # loss
+tf.summary.scalar('loss', cross_entropy)
+#把cross_entropy放在我的summary当中，最后我在tensorboard当中去记录它。
+
+# train方法（最优化算法）采用梯度下降法。
+train_step = tf.train.GradientDescentOptimizer(0.5).minimize(cross_entropy)
+
+#这节课会用Tensorboard去显示loss变化曲线，
+
+sess = tf.Session()
+merged = tf.summary.merge_all()#要merge summarry
+# summary writer goes in here
+# 要记录俩summary,一个是train data,一个是test data
+train_writer = tf.summary.FileWriter("logs/train", sess.graph)
+#它记录的地点呢是logs,第二个文件夹是train,然后它记录的是sess.graph
+#它会把文件分别存在我的train和test这两个文件夹之中
+test_writer = tf.summary.FileWriter("logs/test", sess.graph)
+
+# tf.initialize_all_variables() no long valid from
+# 2017-03-02 if using tensorflow >= 0.12
+if int((tf.__version__).split('.')[1]) < 12 and int((tf.__version__).split('.')[0]) < 1:
+    init = tf.initialize_all_variables()
+else:
+    init = tf.global_variables_initializer()
+sess.run(init)
+#训练 最后开始train，总共训练500次，每一步我都学习train_step
+for i in range(500):
+    # here to determine the keeping probability
+    # 在feed_dict里面加载keep_prob,因为他是training step的一个输入值
+    # 若你想drop掉40%，这边要写keep_prob: 0.6. 保持60%的概率不被drop掉
+    sess.run(train_step, feed_dict={xs: X_train, ys: y_train, keep_prob: 0.5})
+    # #sess.run(train_step, feed_dict={xs: X_train, ys: y_train, keep_prob: 1})
+    if i % 50 == 0:
+        # record loss
+        # merged = tf.summary.merge_all()#要merge summarry
+        # train_result，test_result中不要drop掉任何东西，所以记录的时候keep_prob等于1
+        train_result = sess.run(merged, feed_dict={xs: X_train, ys: y_train, keep_prob: 1})
+        test_result = sess.run(merged, feed_dict={xs: X_test, ys: y_test, keep_prob: 1})
+        #要把以上俩加载到summary writer当中,也就是train_writer.add_summary
+        #跟之前tensorboard当中如何加入是一样的
+        train_writer.add_summary(train_result, i)
+        # 第i个点，第i次学习
+        test_writer.add_summary(test_result, i)
+
+
+
+# 训练中keep_prob=1时，就可以暴露出overfitting问题。
+# keep_prob=0.5时，dropout就发挥了作用。
+# 我们可以两种参数分别运行程序，对比一下结果。
+# 当keep_prob=1时，模型对训练数据的适应性优于测试数据，
+# 存在overfitting，输出如下： 红线是 train 的误差, 蓝线是 test 的误差.
+
+
+

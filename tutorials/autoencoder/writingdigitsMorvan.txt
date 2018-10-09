@@ -1,0 +1,210 @@
+# View more python learning tutorial on my Youtube and Youku channel!!!
+
+# My tutorial website: https://morvanzhou.github.io/tutorials/
+
+from __future__ import division, print_function, absolute_import
+
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Import MNIST data
+from tensorflow.examples.tutorials.mnist import input_data
+
+mnist = input_data.read_data_sets("/tmp/data/", one_hot=False)
+
+# Visualize decoder setting
+# Parameters
+learning_rate = 0.01
+training_epochs = 5
+batch_size = 256
+display_step = 1
+examples_to_show = 10
+
+# Network Parameters
+n_input = 784  # MNIST data input (img shape: 28*28) 784 features
+
+# tf Graph input (only pictures)
+X = tf.placeholder("float", [None, n_input])
+
+# hidden layer settings
+n_hidden_1 = 256  # 1st layer num features, # first compress at 256 features
+n_hidden_2 = 128  # 2nd layer num features, # then the second layers, to 128 features
+
+# tf.Variable(tf.random_normal([in_size, out_size]))
+weights = {
+    'encoder_h1': tf.Variable(tf.random_normal([n_input, n_hidden_1])),
+    'encoder_h2': tf.Variable(tf.random_normal([n_hidden_1, n_hidden_2])),
+
+    'decoder_h1': tf.Variable(tf.random_normal([n_hidden_2, n_hidden_1])),
+    'decoder_h2': tf.Variable(tf.random_normal([n_hidden_1, n_input])),
+}
+
+# linear set of these things
+# biases = tf.Variable(tf.zeros([1, out_size]) + 0.1)
+biases = {
+    'encoder_b1': tf.Variable(tf.random_normal([n_hidden_1])),
+    'encoder_b2': tf.Variable(tf.random_normal([n_hidden_2])),
+
+    'decoder_b1': tf.Variable(tf.random_normal([n_hidden_1])),  # should be 2 but
+    'decoder_b2': tf.Variable(tf.random_normal([n_input])),
+}
+
+# Building the encoder
+def encoder(x):
+    # Encoder Hidden layer with sigmoid activation #1 , compress from 784 to 256
+    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['encoder_h1']),
+                                   biases['encoder_b1']))
+    # Encoder Hidden layer with sigmoid activation #2, compress from 256  to 128
+    layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['encoder_h2']),
+                                   biases['encoder_b2']))
+    return layer_2
+
+# layer_2 are local variables, it's inside the function
+
+## encoder and decoder always have the same activation functions
+# Building the decoder
+def decoder(x):
+    # Encoder Hidden layer with sigmoid activation #1
+    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['decoder_h1']),
+                                   biases['decoder_b1']))
+    # Decoder Hidden layer with sigmoid activation #2
+    layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['decoder_h2']),
+                                   biases['decoder_b2']))
+    # using sigmoid, the value is [0,1]
+    return layer_2
+
+"""
+# Visualize encoder setting
+# Parameters
+learning_rate = 0.01    # 0.01 this learning rate will be better! Tested
+training_epochs = 10
+batch_size = 256
+display_step = 1
+# Network Parameters
+n_input = 784  # MNIST data input (img shape: 28*28)
+# tf Graph input (only pictures)
+X = tf.placeholder("float", [None, n_input])
+# hidden layer settings
+n_hidden_1 = 128
+n_hidden_2 = 64
+n_hidden_3 = 10
+n_hidden_4 = 2
+weights = {
+    'encoder_h1': tf.Variable(tf.truncated_normal([n_input, n_hidden_1],)),
+    'encoder_h2': tf.Variable(tf.truncated_normal([n_hidden_1, n_hidden_2],)),
+    'encoder_h3': tf.Variable(tf.truncated_normal([n_hidden_2, n_hidden_3],)),
+    'encoder_h4': tf.Variable(tf.truncated_normal([n_hidden_3, n_hidden_4],)),
+
+    'decoder_h1': tf.Variable(tf.truncated_normal([n_hidden_4, n_hidden_3],)),
+    'decoder_h2': tf.Variable(tf.truncated_normal([n_hidden_3, n_hidden_2],)),
+    'decoder_h3': tf.Variable(tf.truncated_normal([n_hidden_2, n_hidden_1],)),
+    'decoder_h4': tf.Variable(tf.truncated_normal([n_hidden_1, n_input],)),
+}
+biases = {
+    'encoder_b1': tf.Variable(tf.random_normal([n_hidden_1])),
+    'encoder_b2': tf.Variable(tf.random_normal([n_hidden_2])),
+    'encoder_b3': tf.Variable(tf.random_normal([n_hidden_3])),
+    'encoder_b4': tf.Variable(tf.random_normal([n_hidden_4])),
+
+    'decoder_b1': tf.Variable(tf.random_normal([n_hidden_3])),
+    'decoder_b2': tf.Variable(tf.random_normal([n_hidden_2])),
+    'decoder_b3': tf.Variable(tf.random_normal([n_hidden_1])),
+    'decoder_b4': tf.Variable(tf.random_normal([n_input])),
+}
+def encoder(x):
+    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['encoder_h1']),
+                                   biases['encoder_b1']))
+    layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['encoder_h2']),
+                                   biases['encoder_b2']))
+    layer_3 = tf.nn.sigmoid(tf.add(tf.matmul(layer_2, weights['encoder_h3']),
+                                   biases['encoder_b3']))
+    layer_4 = tf.add(tf.matmul(layer_3, weights['encoder_h4']),
+                                    biases['encoder_b4'])
+    return layer_4
+def decoder(x):
+    layer_1 = tf.nn.sigmoid(tf.add(tf.matmul(x, weights['decoder_h1']),
+                                   biases['decoder_b1']))
+    layer_2 = tf.nn.sigmoid(tf.add(tf.matmul(layer_1, weights['decoder_h2']),
+                                   biases['decoder_b2']))
+    layer_3 = tf.nn.sigmoid(tf.add(tf.matmul(layer_2, weights['decoder_h3']),
+                                biases['decoder_b3']))
+    layer_4 = tf.nn.sigmoid(tf.add(tf.matmul(layer_3, weights['decoder_h4']),
+                                biases['decoder_b4']))
+    return layer_4
+"""
+
+# Construct model
+encoder_op = encoder(X)  # the output of the encoder,128 features
+decoder_op = decoder(encoder_op)  # the output of the decoder, 784 features
+
+# Prediction
+y_pred = decoder_op
+# Targets (Labels) are the input data.
+y_true = X
+
+# Define loss and optimizer, minimize the squared error
+cost = tf.reduce_mean(tf.pow(y_true - y_pred, 2))
+optimizer = tf.train.AdamOptimizer(learning_rate).minimize(cost)
+
+# Launch the graph
+with tf.Session() as sess:
+    # tf.initialize_all_variables() no long valid from
+    # 2017-03-02 if using tensorflow >= 0.12
+    if int((tf.__version__).split('.')[1]) < 12 and int((tf.__version__).split('.')[0]) < 1:
+        init = tf.initialize_all_variables()
+    else:
+        init = tf.global_variables_initializer()
+    sess.run(init)
+    total_batch = int(
+        mnist.train.num_examples / batch_size)
+    # Training cycle
+    for epoch in range(training_epochs):
+        # Loop over all batches
+        for i in range(total_batch):
+            batch_xs, batch_ys = mnist.train.next_batch(
+                batch_size)  # max(x) = 1 not 255, min(x) = 0,xs has been normalized
+"""""  
+if you download MNIST,it'll be between 255, if you use this function, it's gonna normalized the inputs already.
+otherwise,use a for loop.  for x in MNIST, x=x/256 (here, that function has done this for you)
+Why I searched from google and didnot come up ? you could call this mnist anything you want, they defined
+mnist = input_data.read_data_sets("/tmp/data/", one_hot=False)
+you could give any name you want.so the mnist thing at the start of what you set doesn't mean anything in particular
+I would go back of google search, and just get rid of mnist, I'll go for train.next_batch. That could probably mean sth
+mnist.train.next_batch(batch_size) is a function,  batch_size=256
+Normaly, I would do it with numpy, array, which has digits in it.
+MNIST size? mnist data must be a tuple,mnist data=(digits, labels),that must be what this mnist is.
+you could figure out which one is which,digits = mnist(0) or (1),here maybe numpy array(guessing)
+maybe it's the mnist thing or maybe (train, test)= mnist, google or go like mnist.train.(maybe)digits sth like that
+that should give you a numpy array of one of these sizes. Then I would have like:
+for i in n.batches,means m=number of batches, then once I have this thing,I would go like
+batch= digits[i: i+ batchsize] select i upto  i+ batchsize, sth like this, in this case, you need to set
+i = 0, batchsize, 2batchsize, ,,,basically for fist batch,we take 256 examples,the next training set, 256 samples
+and you feed that into your gradient descent. That's how I do it.I try to get the data in this kind of form,
+but they have some code have done this for you.  this way can do it is next_batch,that's all next_batch doing
+so you could just use their one, and say it works, or you write it in for loop.
+"""""
+            # Run optimization op (backprop) and cost op (to get loss value)
+            _, c = sess.run([optimizer, cost], feed_dict={X: batch_xs})
+            # here_means:throw away,I don't care about that (returned)value. blank name, means ignore that value.
+        # Display logs per epoch step
+        if epoch % display_step == 0:
+            print("Epoch:", '%04d' % (epoch + 1),
+                  "cost=", "{:.9f}".format(c))
+#
+    print("Optimization Finished!")
+
+    # # Applying encode and decode over test set
+    encode_decode = sess.run(
+        y_pred, feed_dict={X: mnist.test.images[:examples_to_show]})
+    # Compare original images with their reconstructions
+    f, a = plt.subplots(2, 10, figsize=(10, 2))  # 2rows, every row has 10 pictures
+    for i in range(examples_to_show):
+        a[0][i].imshow(np.reshape(mnist.test.images[i], (28, 28)))  # the first row images
+        a[1][i].imshow(np.reshape(encode_decode[i], (28, 28)))
+    plt.show()
+
+    # encoder_result = sess.run(encoder_op, feed_dict={X: mnist.test.images})
+    # plt.scatter(encoder_result[:, 0], encoder_result[:, 1], c=mnist.test.labels)
+    # plt.colorbar()
+    # plt.show()

@@ -1,0 +1,36 @@
+# 一 add_layer
+###### 对于下面这一段话,这个框架，可以用TensorFlow新版本的这一句话
+###### l1 = tf.layers.dense(tf_x, 10, tf.nn.relu) 代替add_layer这个功能
+###### 我在TensorFlow layer 下面呢创建了一个dense layer,就是最普通的隐藏层的结构
+###### 输入端就是tf_x tf_x = tf.placeholder(tf.float32, x.shape) # input x
+
+def add_layer(inputs, in_size, out_size, activation_function=None,):
+    # add one more layer and return the output of this layer
+    Weights = tf.Variable(tf.random_normal([in_size, out_size]))
+    biases = tf.Variable(tf.zeros([1, out_size]) + 0.1,)
+    Wx_plus_b = tf.matmul(inputs, Weights) + biases
+    if activation_function is None:
+        outputs = Wx_plus_b
+    else:
+        outputs = activation_function(Wx_plus_b,)
+    return outputs
+######
+
+#二 关于loss
+old
+loss = tf.reduce_mean(tf.reduce_sum(tf.square(ys-prediction),))
+
+NEW
+tf.losses 里面有很多不同的loss定义方式，比如说mean_squared_error
+          sigmoid_cross_entropy,都可以由一句话来代替
+
+loss = tf.losses.mean_squared_error(tf_y,output)
+
+#三关于CNN的定义，在layer中有conv
+conv2d，max_pooling1d
+
+# 四RNN怎么办呢？貌似在layer中没有RNN的这种结构
+其实rnn在tf.contrib.rnn，点开之后可以看到
+
+# 关于dropout与batch normalization的应用也有简化过程
+
