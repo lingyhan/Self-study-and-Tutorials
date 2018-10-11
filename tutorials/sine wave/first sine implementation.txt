@@ -1,0 +1,25 @@
+import math
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+num_points = 99
+step = 360/(99-1)
+Xs = []
+Ys = []
+Zs = []
+for i in range(99):
+    t = math.sin(math.radians(step*i))
+    if i % 3 == 0:
+        Xs.append(t)
+    elif i % 3 == 1:
+        Ys.append(t)
+    else:
+        Zs.append(t)
+
+fig = plt.figure()
+ax = plt.axes(projection='3d')
+
+ax.scatter(Xs, Ys, Zs)
+
+plt.show()
+
